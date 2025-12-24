@@ -101,5 +101,8 @@ Uses **Plotly Express** to render interactive charts. The charts react to the to
 
 ---
 
+Project Live Link:
+https://vibecheck-2026.streamlit.app/#2026-commitments-checklist
+
 ### 👨‍💻 Created for the [Code At Christmas Hackathon]
 *Because work-life balance isn't a static state—it's a toggle.*
