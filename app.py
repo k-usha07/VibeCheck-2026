@@ -118,4 +118,141 @@ def local_css(is_pro_mode):
 # 4. LOGIC
 # -----------------------------------------------------------------------------
 def add_goal():
-    task =
+    task = st.session_state.new_goal_input
+    difficulty = st.session_state.difficulty_input
+    is_pro = st.session_state.toggle_state
+    
+    if task:
+        if is_pro:
+            label = "High Impact 🚀" if difficulty >= 8 else "Strategic ♟️" if difficulty >= 5 else "Quick Win ✅"
+        else:
+            label = "Delusional 🦄" if difficulty >= 9 else "Good Luck 💀" if difficulty >= 6 else "Baby Steps 🍼"
+            
+        st.session_state.goals.append({"task": task, "diff": difficulty, "label": label, "done": False})
+        st.session_state.new_goal_input = ""
+
+def delete_goal(index):
+    st.session_state.goals.pop(index)
+
+def toggle_done(index):
+    st.session_state.goals[index]["done"] = not st.session_state.goals[index]["done"]
+
+def update_task_name(index, new_name):
+    st.session_state.goals[index]["task"] = new_name
+
+# -----------------------------------------------------------------------------
+# 5. UI LAYOUT
+# -----------------------------------------------------------------------------
+col_header, col_toggle = st.columns([3, 1])
+with col_toggle:
+    st.write("")
+    is_pro = st.toggle("✨ Pro Mode", value=False, key="toggle_state")
+
+with col_header:
+    if is_pro:
+        st.title(f"📈 Executive Life-OS {current_year}")
+    else:
+        st.title(f"🎄 VibeCheck {current_year}")
+        st.markdown('<div class="snow-container"><div class="snow-layer-1"></div><div class="snow-layer-2"></div></div>', unsafe_allow_html=True)
+
+accent = local_css(is_pro)
+
+# DASHBOARD
+today = datetime.now()
+day_of_year = today.timetuple().tm_yday
+year_percent = (day_of_year / 365) * 100
+days_left = 365 - day_of_year
+
+st.markdown(f"### 🗓️ Annual Cycle: **{year_percent:.1f}% Complete**")
+st.progress(year_percent / 100)
+st.caption(f"{days_left} days remaining in {current_year}.")
+st.write("")
+
+# METRICS
+c1, c2, c3 = st.columns(3)
+c1.metric("☕ Caffeine" if is_pro else "🥛 Eggnog", "2,450 mg" if is_pro else "4.5 L", "+15%")
+c2.metric("🧠 Focus" if is_pro else "🌀 Chaos", "94/100" if is_pro else "Max", "Peaking")
+c3.metric("📅 Time Used", f"{year_percent:.1f}%", f"{days_left} Days Left", delta_color="inverse")
+
+st.write("")
+
+# CHARTS ROW
+c_left, c_right = st.columns(2)
+
+with c_left:
+    st.markdown("### 📊 Progress Parameter")
+    total_goals = len(st.session_state.goals)
+    completed_goals = sum(1 for g in st.session_state.goals if g["done"])
+    
+    fig_gauge = go.Figure(go.Indicator(
+        mode = "gauge+number+delta",
+        value = completed_goals,
+        delta = {'reference': total_goals, 'relative': False, 'position': "top"},
+        title = {'text': "Resolution Momentum", 'font': {'size': 20}},
+        gauge = {
+            'axis': {'range': [None, total_goals if total_goals > 0 else 1]},
+            'bar': {'color': accent},
+            'bgcolor': "rgba(255,255,255,0.4)",
+            'threshold': {'line': {'color': "white", 'width': 4}, 'thickness': 0.75, 'value': total_goals}
+        }
+    ))
+    fig_gauge.update_layout(paper_bgcolor="rgba(0,0,0,0)", font={'color': '#0f172a'}, margin=dict(t=30, b=20))
+    st.plotly_chart(fig_gauge, use_container_width=True)
+
+with c_right:
+    st.markdown("### 🔮 Forecast")
+    vals = [30, 45, 55, 60, 70, 80, 70, 80, 90, 95, 100, 100] if is_pro else [10, 90, 20, 100, 5, 50, 80, 10, 100, 50, 99, 10]
+    fig_bar = px.bar(x=["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], y=vals, color=vals)
+    
+    # UPDATED AXIS LABELS HERE
+    fig_bar.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)", 
+        plot_bgcolor="rgba(0,0,0,0)", 
+        xaxis=dict(showgrid=False, title="Month"), # ADDED TITLE
+        yaxis=dict(showgrid=False, showticklabels=True, title="Intensity"), # ADDED TITLE
+        margin=dict(t=10, b=0, l=0, r=0)
+    )
+    fig_bar.update_coloraxes(showscale=False)
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+st.divider()
+
+# -----------------------------------------------------------------------------
+# 6. MUTABLE RESOLUTION COURT (With DELETE!)
+# -----------------------------------------------------------------------------
+# Removed "(Editable)" from title
+st.markdown("### ⚖️ The Resolution Court")
+
+col_in, col_diff, col_btn = st.columns([3, 2, 1])
+with col_in:
+    st.text_input("New Goal", placeholder="e.g. Learn AI", key="new_goal_input", label_visibility="collapsed")
+with col_diff:
+    st.slider("Difficulty", 1, 10, 5, key="difficulty_input", label_visibility="collapsed")
+with col_btn:
+    st.button("Judge & Add 🔨", on_click=add_goal)
+
+st.write("")
+
+# EDITABLE LIST LOOP
+for i, goal in enumerate(st.session_state.goals):
+    with st.container():
+        # Added a 4th column for the DELETE button
+        c_check, c_edit, c_label, c_del = st.columns([0.5, 3, 1.5, 0.5])
+        
+        with c_check:
+            st.checkbox("", value=goal["done"], key=f"check_{i}", on_change=toggle_done, args=(i,))
+            
+        with c_edit:
+            new_text = st.text_input("Task", value=goal['task'], key=f"edit_{i}", label_visibility="collapsed")
+            if new_text != goal['task']:
+                update_task_name(i, new_text)
+                
+        with c_label:
+            st.caption(f"{goal['diff']}/10")
+            st.markdown(f"**{goal['label']}**")
+            
+        with c_del:
+            # The Delete Button
+            st.button("🗑️", key=f"del_{i}", on_click=delete_goal, args=(i,), type="secondary")
+            
+        st.divider()
