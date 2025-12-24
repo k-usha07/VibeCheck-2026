@@ -13,9 +13,10 @@ st.set_page_config(page_title="VibeCheck", page_icon="🍱", layout="wide")
 current_year = datetime.now().year
 
 if 'goals' not in st.session_state:
+    # UPDATED STRUCTURE: Added "month" key
     st.session_state.goals = [
-        {"task": "Survive the Holidays", "diff": 8, "label": "Essential 🎄", "done": False},
-        {"task": "Win Hackathon", "diff": 10, "label": "Legendary 🏆", "done": False}
+        {"task": "Survive the Holidays", "diff": 8, "label": "Essential 🎄", "done": False, "month": "December"},
+        {"task": "Start Gym Arc", "diff": 6, "label": "Strategic ♟️", "done": False, "month": "January"}
     ]
 
 # -----------------------------------------------------------------------------
@@ -90,7 +91,6 @@ def local_css(is_pro_mode):
             box-shadow: 0 8px 32px 0 {shadow_color}; padding: 15px !important;
             animation: slideUp 0.6s ease-out forwards;
         }}
-        
         div[data-testid="stVerticalBlock"] > div > div.stMarkdown > div {{ padding: 0 !important; border: none !important; box-shadow: none !important; background: transparent !important; }}
         
         /* TYPOGRAPHY */
@@ -100,16 +100,11 @@ def local_css(is_pro_mode):
         /* WIDGETS */
         .stButton > button {{ background-color: {accent_color} !important; color: white !important; border-radius: 12px; border: none; padding: 10px 20px; width: 100%; }}
         
-        /* DELETE BUTTON SPECIFIC STYLE */
+        /* DELETE BUTTON */
         button[kind="secondary"] {{
-            background-color: transparent !important;
-            color: #ef4444 !important; /* Red text */
-            border: 1px solid #ef4444 !important;
+            background-color: transparent !important; color: #ef4444 !important; border: 1px solid #ef4444 !important;
         }}
-        button[kind="secondary"]:hover {{
-            background-color: #ef4444 !important;
-            color: white !important;
-        }}
+        button[kind="secondary"]:hover {{ background-color: #ef4444 !important; color: white !important; }}
         </style>
     """, unsafe_allow_html=True)
     return accent_color
@@ -118,9 +113,10 @@ def local_css(is_pro_mode):
 # 4. LOGIC
 # -----------------------------------------------------------------------------
 def add_goal():
-    task = st.session_state.new_goal_input
-    difficulty = st.session_state.difficulty_input
-    is_pro = st.session_state.toggle_state
+    task = st.session_state.get("new_goal_input", "")
+    difficulty = st.session_state.get("difficulty_input", 5)
+    month = st.session_state.get("month_input", "December") # GET MONTH
+    is_pro = st.session_state.get("toggle_state", False)
     
     if task:
         if is_pro:
@@ -128,7 +124,7 @@ def add_goal():
         else:
             label = "Delusional 🦄" if difficulty >= 9 else "Good Luck 💀" if difficulty >= 6 else "Baby Steps 🍼"
             
-        st.session_state.goals.append({"task": task, "diff": difficulty, "label": label, "done": False})
+        st.session_state.goals.append({"task": task, "diff": difficulty, "label": label, "done": False, "month": month})
         st.session_state.new_goal_input = ""
 
 def delete_goal(index):
@@ -176,7 +172,7 @@ c3.metric("📅 Time Used", f"{year_percent:.1f}%", f"{days_left} Days Left", de
 
 st.write("")
 
-# CHARTS ROW
+# CHARTS
 c_left, c_right = st.columns(2)
 
 with c_left:
@@ -201,58 +197,72 @@ with c_left:
 
 with c_right:
     st.markdown("### 🔮 Forecast")
-    vals = [30, 45, 55, 60, 70, 80, 70, 80, 90, 95, 100, 100] if is_pro else [10, 90, 20, 100, 5, 50, 80, 10, 100, 50, 99, 10]
+    if is_pro:
+        vals = [30, 45, 55, 60, 70, 80, 70, 80, 90, 95, 100, 100]
+        y_label = "Productivity (%)"
+    else:
+        vals = [10, 90, 20, 100, 5, 50, 80, 10, 100, 50, 99, 10]
+        y_label = "Chaos Level (%)"
+
     fig_bar = px.bar(x=["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], y=vals, color=vals)
-    
-    # UPDATED AXIS LABELS HERE
     fig_bar.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)", 
-        plot_bgcolor="rgba(0,0,0,0)", 
-        xaxis=dict(showgrid=False, title="Month"), # ADDED TITLE
-        yaxis=dict(showgrid=False, showticklabels=True, title="Intensity"), # ADDED TITLE
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", 
+        xaxis=dict(showgrid=False, title="Month"), 
+        yaxis=dict(showgrid=False, showticklabels=True, title=y_label), 
         margin=dict(t=10, b=0, l=0, r=0)
     )
     fig_bar.update_coloraxes(showscale=False)
+    fig_bar.update_traces(hovertemplate=f'<b>Month:</b> %{{x}}<br><b>{y_label}:</b> %{{y}}<extra></extra>')
     st.plotly_chart(fig_bar, use_container_width=True)
 
 st.divider()
 
 # -----------------------------------------------------------------------------
-# 6. MUTABLE RESOLUTION COURT (With DELETE!)
+# 6. MONTH-WISE RESOLUTION COURT
 # -----------------------------------------------------------------------------
-# Removed "(Editable)" from title
 st.markdown("### ⚖️ The Resolution Court")
 
-col_in, col_diff, col_btn = st.columns([3, 2, 1])
+# Defined Timeline
+timeline_months = ["December", "January", "February", "March", "April", "May", "June"]
+
+# Input Section (Added Month Selector)
+col_in, col_month, col_diff, col_btn = st.columns([3, 1.5, 1.5, 1])
 with col_in:
     st.text_input("New Goal", placeholder="e.g. Learn AI", key="new_goal_input", label_visibility="collapsed")
+with col_month:
+    st.selectbox("Timeline", timeline_months, key="month_input", label_visibility="collapsed")
 with col_diff:
     st.slider("Difficulty", 1, 10, 5, key="difficulty_input", label_visibility="collapsed")
 with col_btn:
-    st.button("Judge & Add 🔨", on_click=add_goal)
+    st.button("Add ➕", on_click=add_goal)
 
 st.write("")
 
-# EDITABLE LIST LOOP
-for i, goal in enumerate(st.session_state.goals):
-    with st.container():
-        # Added a 4th column for the DELETE button
-        c_check, c_edit, c_label, c_del = st.columns([0.5, 3, 1.5, 0.5])
-        
-        with c_check:
-            st.checkbox("", value=goal["done"], key=f"check_{i}", on_change=toggle_done, args=(i,))
-            
-        with c_edit:
-            new_text = st.text_input("Task", value=goal['task'], key=f"edit_{i}", label_visibility="collapsed")
-            if new_text != goal['task']:
-                update_task_name(i, new_text)
+# DISPLAY LOGIC: GROUP BY MONTH
+for month in timeline_months:
+    # Filter goals that belong to this month
+    # We must use enumerate on the MAIN list to ensure indexes match for editing/deleting
+    month_goals_indices = [i for i, g in enumerate(st.session_state.goals) if g.get('month', 'December') == month]
+    
+    if month_goals_indices:
+        st.markdown(f"#### 🗓️ {month}")
+        for i in month_goals_indices:
+            goal = st.session_state.goals[i]
+            with st.container():
+                c_check, c_edit, c_label, c_del = st.columns([0.5, 3, 1.5, 0.5])
                 
-        with c_label:
-            st.caption(f"{goal['diff']}/10")
-            st.markdown(f"**{goal['label']}**")
-            
-        with c_del:
-            # The Delete Button
-            st.button("🗑️", key=f"del_{i}", on_click=delete_goal, args=(i,), type="secondary")
-            
-        st.divider()
+                with c_check:
+                    st.checkbox("", value=goal["done"], key=f"check_{i}", on_change=toggle_done, args=(i,))
+                
+                with c_edit:
+                    new_text = st.text_input("Task", value=goal['task'], key=f"edit_{i}", label_visibility="collapsed")
+                    if new_text != goal['task']:
+                        update_task_name(i, new_text)
+                        
+                with c_label:
+                    st.caption(f"{goal['diff']}/10")
+                    st.markdown(f"**{goal['label']}**")
+                    
+                with c_del:
+                    st.button("🗑️", key=f"del_{i}", on_click=delete_goal, args=(i,), type="secondary")
+                st.divider()
