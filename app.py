@@ -13,7 +13,6 @@ st.set_page_config(page_title="VibeCheck", page_icon="🍱", layout="wide")
 current_year = datetime.now().year
 
 if 'goals' not in st.session_state:
-    # UPDATED STRUCTURE: Added "month" key
     st.session_state.goals = [
         {"task": "Survive the Holidays", "diff": 8, "label": "Essential 🎄", "done": False, "month": "December"},
         {"task": "Start Gym Arc", "diff": 6, "label": "Strategic ♟️", "done": False, "month": "January"}
@@ -115,7 +114,7 @@ def local_css(is_pro_mode):
 def add_goal():
     task = st.session_state.get("new_goal_input", "")
     difficulty = st.session_state.get("difficulty_input", 5)
-    month = st.session_state.get("month_input", "December") # GET MONTH
+    month = st.session_state.get("month_input", "December")
     is_pro = st.session_state.get("toggle_state", False)
     
     if task:
@@ -225,23 +224,24 @@ st.markdown("### ⚖️ The Resolution Court")
 # Defined Timeline
 timeline_months = ["December", "January", "February", "March", "April", "May", "June"]
 
-# Input Section (Added Month Selector)
+# Input Section (UPDATED: Visible Labels)
 col_in, col_month, col_diff, col_btn = st.columns([3, 1.5, 1.5, 1])
+
 with col_in:
-    st.text_input("New Goal", placeholder="e.g. Learn AI", key="new_goal_input", label_visibility="collapsed")
+    st.text_input("🎯 Goal Name", placeholder="e.g. Learn AI", key="new_goal_input") # Visible Label
 with col_month:
-    st.selectbox("Timeline", timeline_months, key="month_input", label_visibility="collapsed")
+    st.selectbox("🗓️ Month", timeline_months, key="month_input") # Visible Label
 with col_diff:
-    st.slider("Difficulty", 1, 10, 5, key="difficulty_input", label_visibility="collapsed")
+    st.slider("🔥 Difficulty", 1, 10, 5, key="difficulty_input") # Visible Label
 with col_btn:
+    st.write("") # Spacer to push button down
+    st.write("") 
     st.button("Add ➕", on_click=add_goal)
 
 st.write("")
 
 # DISPLAY LOGIC: GROUP BY MONTH
 for month in timeline_months:
-    # Filter goals that belong to this month
-    # We must use enumerate on the MAIN list to ensure indexes match for editing/deleting
     month_goals_indices = [i for i, g in enumerate(st.session_state.goals) if g.get('month', 'December') == month]
     
     if month_goals_indices:
