@@ -4,170 +4,155 @@ import plotly.express as px
 from datetime import datetime
 
 # -----------------------------------------------------------------------------
-# 1. APP CONFIGURATION & SETUP
+# 1. SETUP
 # -----------------------------------------------------------------------------
-st.set_page_config(
-    page_title="VibeCheck 2026",
-    page_icon="🍱",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="VibeCheck 2026", page_icon="🍱", layout="wide")
+
+# Initialize Session State for the To-Do List
+if 'goals' not in st.session_state:
+    st.session_state.goals = ["Survive the Holidays", "Deploy VibeCheck App"]
+
+def add_goal():
+    new_goal = st.session_state.new_goal_input
+    if new_goal:
+        st.session_state.goals.append(new_goal)
+        st.session_state.new_goal_input = "" # Clear input
 
 # -----------------------------------------------------------------------------
-# 2. CSS STYLING (The "Pinterest/Bento" Look)
+# 2. THE HIGH-CONTRAST CSS
 # -----------------------------------------------------------------------------
-# This function injects custom CSS to make the boxes rounded and pretty
 def local_css(is_pro_mode):
-    # Colors change based on the toggle
-    bg_color = "#F8FAFC" if is_pro_mode else "#FFF5F5"
-    primary_color = "#1E3A8A" if is_pro_mode else "#FF4B4B"
-    
+    if is_pro_mode:
+        bg_gradient = "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)"
+        card_bg = "rgba(255, 255, 255, 0.95)"
+        text_color = "#0f172a"
+        accent_color = "#2563eb"
+        shadow = "0 8px 32px 0 rgba(31, 38, 135, 0.1)"
+    else:
+        bg_gradient = "linear-gradient(120deg, #fccb90 0%, #d57eeb 100%)"
+        card_bg = "rgba(255, 255, 255, 0.95)" 
+        text_color = "#1f2937"
+        accent_color = "#be185d"
+        shadow = "0 8px 32px 0 rgba(219, 39, 119, 0.15)"
+
     st.markdown(f"""
         <style>
-        /* Main Background */
-        .stApp {{
-            background-color: {bg_color};
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap');
+
+        .stApp {{ background: {bg_gradient}; font-family: 'Space Grotesk', sans-serif; }}
+        #MainMenu, footer, header {{visibility: hidden;}}
+        
+        /* CARD STYLING */
+        [data-testid="stMetric"], div.stMarkdown, div[data-testid="stVerticalBlock"] > div {{
+            border-radius: 24px;
+        }}
+        [data-testid="stMetric"], .stTextInput > div > div {{
+            background: {card_bg};
+            backdrop-filter: blur( 12px );
+            box-shadow: {shadow};
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
         }}
         
-        /* The Bento Card Styling (Metrics) */
-        [data-testid="stMetric"] {{
-            background-color: white;
-            border: 1px solid #e2e8f0;
-            padding: 20px;
-            border-radius: 20px; /* Rounded corners */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
+        /* TEXT COLORS */
+        h1, h2, h3, p, span, div, label {{
+            font-family: 'Space Grotesk', sans-serif !important;
+            color: {text_color} !important;
+        }}
+        [data-testid="stMetricValue"] {{
+            font-size: 38px !important;
+            font-weight: 800 !important;
+            color: {accent_color} !important;
         }}
         
-        /* Customize the Progress Bar Color */
-        .stProgress > div > div > div > div {{
-            background-color: {primary_color};
-        }}
-        
-        /* Headers */
-        h1, h2, h3 {{
-            color: #1f2937;
-            font-family: 'Inter', sans-serif;
+        /* CHECKBOX STYLING */
+        .stCheckbox label span {{
+            font-size: 18px;
         }}
         </style>
     """, unsafe_allow_html=True)
+    return accent_color
 
 # -----------------------------------------------------------------------------
-# 3. SIDEBAR CONTROLS
+# 3. SIDEBAR & LOGIC
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    st.title("🎛️ Vibe Control")
-    
-    # The Main Toggle
-    is_pro = st.toggle("Activate Executive Mode 💼", value=False)
-    vibe_mode = "Pro" if is_pro else "Silly"
-    
+    st.markdown("## 🎛️ Vibe Controller")
+    is_pro = st.toggle("✨ Activate Pro Mode", value=False)
     st.divider()
-    
-    # User Input for the "Existential Clock"
-    st.subheader("👤 User Data")
-    age = st.slider("Your Age", min_value=1, max_value=85, value=22)
-    life_expectancy = 80
-    
-    st.divider()
-    st.caption(f"Current Mode: **{vibe_mode}**")
-    st.caption("🚀 Built for Xmas Hackathon 2025")
+    st.caption("Mode: " + ("Executive 💼" if is_pro else "Holiday 🎅"))
 
-# Apply the CSS based on the toggle state
-local_css(is_pro)
+accent = local_css(is_pro)
 
-# -----------------------------------------------------------------------------
-# 4. DATA LOGIC & CALCULATIONS
-# -----------------------------------------------------------------------------
-
-# A. Existential Math
-years_lived = age
-years_remaining = life_expectancy - age
-life_percent = (age / life_expectancy) * 100
-
-# B. Year Progress Math (For 2025)
+# Math
 today = datetime.now()
 day_of_year = today.timetuple().tm_yday
 year_percent = (day_of_year / 365) * 100
-days_left_in_year = 365 - day_of_year
-
-# C. Color Palette for Charts
-chart_color = "#1E3A8A" if is_pro else "#FF4B4B" # Blue for Pro, Red for Silly
+days_left = 365 - day_of_year
 
 # -----------------------------------------------------------------------------
-# 5. UI LAYOUT (THE BENTO GRID)
+# 4. UI LAYOUT
 # -----------------------------------------------------------------------------
 
-# Title Section
 if is_pro:
-    st.title("📈 Executive Life-OS: 2026 Strategy")
+    st.title("📈 Executive Life-OS")
 else:
-    st.title("🎄 VibeCheck 2026: The Holiday Edition")
-    st.snow() # The fun animation
+    st.title("🎅 VibeCheck 2026")
+    st.snow()
 
-# --- TOP ROW: The "Time Remaining" Bar ---
-st.markdown("### 🗓️ 2025 Lease Progress")
+st.write("")
+
+# --- ROW 1: PROGRESS ---
+st.markdown(f"### 🗓️ 2025 Status: **{year_percent:.1f}% Complete**")
 st.progress(year_percent / 100)
-if is_pro:
-    st.caption(f"Q4 Status: **{year_percent:.1f}% Complete**. {days_left_in_year} days remaining to close annual targets.")
-else:
-    st.caption(f"Warning! The year is **{year_percent:.1f}% gone**. Only {days_left_in_year} days left to cause chaos!")
+st.caption(f"Only {days_left} days remaining in this yearly cycle.")
+st.write("")
 
-st.write("") # Spacing
-
-# --- MIDDLE ROW: Key Metrics (Bento Boxes) ---
+# --- ROW 2: METRICS ---
 col1, col2, col3 = st.columns(3)
-
 with col1:
-    # Logic: Toggle between Eggnog (Silly) and Caffeine (Pro)
-    label = "☕ Caffeine Intake" if is_pro else "🥛 Eggnog Level"
-    val = "2,400 mg" if is_pro else "4.5 Liters"
-    delta = "+15% vs Avg" if is_pro else "Critical Levels"
-    st.metric(label=label, value=val, delta=delta)
-
+    st.metric("☕ Caffeine (mg)" if is_pro else "🥛 Eggnog (L)", "2,450" if is_pro else "4.2", "+12%")
 with col2:
-    # Logic: Toggle between Focus (Pro) and Chaos (Silly)
-    label = "🧠 Deep Work Score" if is_pro else "🌀 Chaos Probability"
-    val = "87 / 100" if is_pro else "99.9%"
-    delta = "High Efficiency" if is_pro else "Impending Doom"
-    st.metric(label=label, value=val, delta=delta)
-
+    st.metric("🧠 Focus Score" if is_pro else "🌀 Chaos Level", "92/100" if is_pro else "Maximum", "Trending Up")
 with col3:
-    # Logic: The Life Percentage
-    st.metric(label="⌛ Life Lease Used", value=f"{life_percent:.1f}%", delta=f"{years_remaining} Years Left", delta_color="inverse")
+    st.metric("📅 Year Used", f"{year_percent:.1f}%", f"{days_left} Days Left", delta_color="inverse")
 
-st.write("") # Spacing
+st.write("")
 
-# --- BOTTOM ROW: Visualizations (Plotly) ---
-c_left, c_right = st.columns([1, 1])
+# --- ROW 3: CHARTS ---
+c1, c2 = st.columns(2)
+with c1:
+    st.markdown("### ⏰ The Yearly Clock")
+    df_year = pd.DataFrame({"Status": ["Passed", "Left"], "Val": [day_of_year, days_left]})
+    fig_year = px.pie(df_year, values='Val', names='Status', hole=0.6, color_discrete_sequence=[accent, "#ffffff"])
+    fig_year.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", showlegend=False, margin=dict(t=20, b=20, l=20, r=20))
+    fig_year.update_traces(textinfo='percent+label', textfont_color=accent)
+    st.plotly_chart(fig_year, use_container_width=True)
 
-with c_left:
-    st.markdown("### 🧬 The Existential Clock")
-    # Data for Pie Chart
-    df_life = pd.DataFrame({
-        "Status": ["Time Lived", "Time Remaining"],
-        "Years": [years_lived, years_remaining]
-    })
-    
-    # Plotly Donut Chart
-    fig_life = px.pie(df_life, values='Years', names='Status', hole=0.6,
-                      color_discrete_sequence=[chart_color, "#e2e8f0"])
-    fig_life.update_layout(showlegend=False, margin=dict(t=20, b=0, l=0, r=0), height=300)
-    st.plotly_chart(fig_life, use_container_width=True)
-
-with c_right:
+with c2:
     st.markdown("### 📊 12-Month Forecast")
-    
-    # Mock Data for Heatmap/Bar
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    # Pro mode = steady growth; Silly mode = random chaos spikes
-    values = [30, 40, 45, 50, 55, 60, 55, 60, 70, 80, 90, 100] if is_pro else [10, 90, 20, 100, 5, 50, 80, 10, 100, 20, 60, 99]
-    
-    df_trend = pd.DataFrame({"Month": months, "Intensity": values})
-    
-    # Plotly Bar Chart
-    fig_trend = px.bar(df_trend, x='Month', y='Intensity',
-                       color='Intensity',
-                       color_continuous_scale='Blues' if is_pro else 'Reds')
-    fig_trend.update_layout(showlegend=False, margin=dict(t=20, b=0, l=0, r=0), height=300)
-    st.plotly_chart(fig_trend, use_container_width=True)
+    vals = [30, 40, 50, 45, 60, 70, 60, 65, 80, 85, 90, 95] if is_pro else [10, 90, 20, 100, 5, 50, 80, 10, 100, 20, 60, 99]
+    fig_bar = px.bar(x=["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], y=vals, color=vals, color_continuous_scale="Blues" if is_pro else "RdPu")
+    fig_bar.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis=dict(showgrid=False, title=None), yaxis=dict(showgrid=False, title=None), margin=dict(t=20, b=20, l=20, r=20))
+    fig_bar.update_coloraxes(showscale=False)
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+st.write("")
+
+# --- NEW SECTION: RESOLUTIONS ---
+st.markdown("### 📝 2026 Commitments")
+
+# Input Area
+c_input, c_btn = st.columns([4, 1])
+with c_input:
+    st.text_input("Add a new resolution...", key="new_goal_input", placeholder="e.g., Learn to fly a plane", on_change=add_goal)
+with c_btn:
+    st.write("") # Spacer
+    st.write("") # Spacer
+    if st.button("Add Task ➕"):
+        add_goal()
+
+# Display Checklist
+st.write("Your Hit-List:")
+for i, goal in enumerate(st.session_state.goals):
+    st.checkbox(goal, key=f"goal_{i}")
